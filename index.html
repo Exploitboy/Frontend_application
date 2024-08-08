@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Task Management</h1>
+    
+    <h2>Set Task</h2>
+    <input type="number" id="taskId" placeholder="Task ID">
+    <input type="text" id="taskDescription" placeholder="Task Description">
+    <input type="checkbox" id="taskCompleted"> Completed
+    <button id="setTaskButton">Set Task</button>
+
+    <h2>Get Task</h2>
+    <input type="number" id="lookupTaskId" placeholder="Task ID">
+    <button id="getTaskButton">Get Task</button>
+    <div id="taskDisplay"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                const web3 = new Web3(window.ethereum);
+                const contractAddress = '0x3d4cf90464cC36Dd3aaDBF21F2F1c759c860bF59';
+                const contractABI = [
+                    {
+                        "constant": false,
+                        "inputs": [
+                            { "name": "_taskId", "type": "uint256" },
+                            { "name": "_description", "type": "string" },
+                            { "name": "_completed", "type": "bool" }
+                        ],
+                        "name": "setTask",
+                        "outputs": [],
+                        "payable": false,
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "constant": true,
+                        "inputs": [{ "name": "_taskId", "type": "uint256" }],
+                        "name": "getTask",
+                        "outputs": [
+                            { "name": "", "type": "string" },
+                            { "name": "", "type": "bool" }
+                        ],
+                        "payable": false,
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
+                const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+                async function setupListeners() {
+                    document.getElementById('setTaskButton').addEventListener('click', async () => {
+                        const id = document.getElementById('taskId').value;
+                        const description = document.getElementById('taskDescription').value;
+                        const completed = document.getElementById('taskCompleted').checked;
+
+                        try {
+                            await ethereum.request({ method: 'eth_requestAccounts' });
+                            const accounts = await web3.eth.getAccounts();
+                            await contract.methods.setTask(id, description, completed).send({ from: accounts[0] });
+                            alert('Task updated successfully');
+                        } catch (error) {
+                            console.error('Error updating task:', error);
+                            alert('Error updating task');
+                        }
+                    });
+
+                    document.getElementById('getTaskButton').addEventListener('click', async () => {
+                        const id = document.getElementById('lookupTaskId').value;
+                        try {
+                            const result = await contract.methods.getTask(id).call();
+                            const taskInfo = `
+                                <p>Description: ${result[0]}</p>
+                                <p>Completed: ${result[1]}</p>
+                            `;
+                            document.getElementById('taskDisplay').innerHTML = taskInfo;
+                        } catch (error) {
+                            console.error('Error fetching task:', error);
+                            alert('Error fetching task');
+                        }
+                    });
+                }
+
+                try {
+                    await ethereum.request({ method: 'eth_requestAccounts' });
+                    setupListeners();
+                } catch (error) {
+                    console.error('Error requesting MetaMask accounts:', error);
+                    alert('Error connecting to MetaMask');
+                }
+            } else {
+                alert('Please install MetaMask!');
+            }
+        });
+    </script>
+</body>
+</html>
